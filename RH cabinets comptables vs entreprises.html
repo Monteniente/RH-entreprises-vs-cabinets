@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Interactive : Recrutement Cabinets Comptables vs Entreprises</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F4F7F9; /* Very Light Blue/Grey */
+            color: #2C3E50; /* Dark Slate Blue */
+        }
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #3498DB; /* Bright Blue */
+        }
+        .section-title {
+            color: #3498DB; /* Bright Blue */
+            border-bottom: 2px solid #85C1E9; /* Lighter Blue */
+            padding-bottom: 0.5rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Example max-width */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Base height, adjust with Tailwind for responsive heights e.g. h-64 sm:h-72 md:h-80 */
+            max-height: 400px;
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .stat-value {
+            color: #3498DB; /* Bright Blue */
+            font-weight: 700;
+            font-size: 2.5rem; /* text-4xl */
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #E5E7EB; /* border-gray-200 */
+            padding: 0.75rem; /* p-3 */
+            text-align: left;
+        }
+        .comparison-table th {
+            background-color: #EBF5FB; /* Lightest Blue */
+        }
+        .pill {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* rounded-full */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600;
+        }
+        .pill-cabinet {
+            background-color: #AED6F1; /* Lighter Blue */
+            color: #1B4F72; /* Darker Blue for text */
+        }
+        .pill-entreprise {
+            background-color: #A2D9CE; /* Soft Teal */
+            color: #117864; /* Darker Teal for text */
+        }
+        .recommendation-icon {
+            font-size: 1.5rem;
+            color: #3498DB;
+        }
+
+        /* --- Chosen Palette: "Clarté Professionnelle" (Background: #F4F7F9, Primary Text: #2C3E50, Primary Accent: #3498DB, Secondary Accent: #85C1E9, Positive: #2ECC71, Negative: #E74C3C) --- */
+        /* --- Application Structure Plan: SPA thématique interactive explorant les défis de recrutement/rétention des cabinets comptables par rapport aux entreprises. Sections: 1. Introduction (contexte, chiffres clés sur la tension du marché), 2. Image & Attractivité (perception des cabinets, défis), 3. Environnements Comparés (management, conditions de travail, pression - présentation interactive des différences via cartes et graphiques), 4. Rémunération & Avantages (analyse comparative des packages), 5. Reconnaissance & Équilibre (impact de la considération, équilibre vie pro/perso), 6. Synthèse des Défis (pourquoi les cabinets luttent-ils ?), 7. Recommandations Stratégiques (pistes pour les cabinets). Navigation via un menu supérieur fixe. Interactivité principale : graphiques Chart.js pour données quantitatives (ex: étude Guadeloupe), tableaux HTML/Tailwind pour comparaisons directes (ex: Tableaux 1, 2, 3 du rapport), sections extensibles ou onglets pour détailler certains points. L'objectif est de rendre accessible et digestible le contenu dense du rapport. --- */
+        /* --- Visualization & Content Choices:
+            - Chiffres clés du recrutement (postes à pourvoir, % cabinets en difficulté): Objectif: Informer. Méthode: Grands chiffres (HTML/Tailwind) avec icônes Unicode. Interaction: Aucune. Justification: Impact visuel pour souligner l'ampleur du problème. (Pas de SVG)
+            - Données de l'étude Guadeloupe (ex: % sentiment pression, % mal informés, % satisfaction rémunération): Objectif: Comparer/Informer. Méthode: Graphiques à barres ou Donut (Chart.js). Interaction: Infobulles. Justification: Visualisation claire des perceptions et écarts. (Pas de SVG)
+            - Comparaison Générale (Tableau 1 du rapport): Objectif: Comparer/Organiser. Méthode: Cartes comparatives interactives côte-à-côte (HTML/Tailwind) pour chaque attribut, ou tableau HTML responsive. Interaction: Possibilité de filtrer/mettre en avant des attributs. Justification: Faciliter la comparaison point par point. (Pas de SVG, Pas de Mermaid)
+            - Facteurs de Rémunération (Tableau 2 du rapport): Objectif: Comparer/Organiser. Méthode: Tableau HTML responsive. Interaction: Infobulles sur termes spécifiques. Justification: Clarté des packages. (Pas de SVG, Pas de Mermaid)
+            - Facteurs de Satisfaction/Rétention (Tableau 3 du rapport): Objectif: Organiser. Méthode: Listes à puces doubles (Positif/Négatif) dans des cartes HTML/Tailwind. Interaction: Aucune. Justification: Synthèse visuelle. (Pas de SVG, Pas de Mermaid)
+            - Recommandations stratégiques: Objectif: Informer/Organiser. Méthode: Cartes thématiques (HTML/Tailwind) avec icônes Unicode et texte concis. Interaction: Effet de survol pour détails. Justification: Présentation actionnable et mémorisable. (Pas de SVG, Pas de Mermaid)
+        --- */
+        /* --- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. --- */
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-700">Cabinets vs Entreprises : Défis de Recrutement</h1>
+            <nav>
+                <a href="#introduction" class="nav-link text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Intro</a>
+                <a href="#attractivite" class="nav-link text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Attractivité</a>
+                <a href="#environnements" class="nav-link text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Environnements</a>
+                <a href="#remuneration" class="nav-link text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Rémunération</a>
+                <a href="#reconnaissance" class="nav-link text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Reconnaissance</a>
+                <a href="#synthese" class="nav-link text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Synthèse</a>
+                <a href="#recommandations" class="nav-link text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Recommandations</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+
+        <section id="introduction" class="py-8">
+            <h2 class="text-3xl font-bold mb-6 section-title text-center">Le Casse-Tête des Talents en Comptabilité</h2>
+            <div class="card p-6 md:p-8">
+                <p class="text-lg text-gray-700 mb-4">Le secteur de l'expertise comptable en France fait face à des défis majeurs pour attirer et retenir ses collaborateurs, surtout comparé aux postes en entreprise. Ce document interactif explore les raisons de ces tensions, basées sur le rapport "Analyse Comparative des Défis de Recrutement et de Rétention".</p>
+                <p class="text-gray-600 mb-6">L'inadéquation entre le modèle traditionnel des cabinets et les attentes des nouvelles générations (équilibre vie pro/perso, reconnaissance, management participatif) est un facteur clé.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div class="bg-blue-50 p-6 rounded-lg">
+                        <div class="stat-value">30 000</div>
+                        <p class="text-gray-700 mt-2">Postes à pourvoir en cabinet d'ici 2025 (Ordre des Experts-Comptables)</p>
+                    </div>
+                    <div class="bg-blue-50 p-6 rounded-lg">
+                        <div class="stat-value">66%</div>
+                        <p class="text-gray-700 mt-2">Des cabinets ont eu des difficultés à recruter en 2022</p>
+                    </div>
+                    <div class="bg-blue-50 p-6 rounded-lg">
+                        <div class="stat-value">15-20%</div>
+                        <p class="text-gray-700 mt-2">Taux de turnover typique en cabinet (plus élevé post-Covid)</p>
+                    </div>
+                </div>
+                 <p class="text-sm text-gray-500 mt-6 text-center">Ces chiffres soulignent l'urgence pour les cabinets de repenser leur proposition de valeur employeur.</p>
+            </div>
+        </section>
+
+        <hr class="my-12 border-gray-300">
+
+        <section id="attractivite" class="py-8">
+            <h2 class="text-3xl font-bold mb-6 section-title text-center">Le "Déficit d'Attractivité" des Cabinets</h2>
+            <div class="card p-6 md:p-8">
+                <p class="text-lg text-gray-700 mb-4">L'attractivité des cabinets comptables est affectée par une image parfois stéréotypée : "austère", "vieillissante", axée sur des tâches répétitives. Ceci contraste avec la réalité d'un métier aux missions de conseil variées et stratégiques.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Perceptions Négatives Courantes :</h3>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Notoriété moindre par rapport aux grandes entreprises ou autres professions libérales.</li>
+                            <li>Grands cabinets vus comme "monolithiques" et "verticalisés" par les jeunes.</li>
+                            <li>Profession souvent "méconnue", impactant le vivier de talents.</li>
+                            <li>Le processus de recrutement lui-même peut manquer d'attractivité.</li>
+                        </ul>
+                         <p class="text-sm text-gray-500 mt-3">Cette image peut être une barrière avant même que les candidats considèrent une carrière en cabinet.</p>
+                    </div>
+                    <div class="chart-container h-64 sm:h-72 md:h-80">
+                        <canvas id="attractiviteChart"></canvas>
+                    </div>
+                </div>
+                <p class="text-gray-600 mt-6">Ce déficit d'attractivité tend à s'auto-alimenter : une image négative et un fort turnover nuisent à la marque employeur, rendant le recrutement proactif difficile.</p>
+            </div>
+        </section>
+
+        <hr class="my-12 border-gray-300">
+
+        <section id="environnements" class="py-8">
+            <h2 class="text-3xl font-bold mb-10 section-title text-center">Environnements de Travail : Cabinets vs Entreprises</h2>
+             <p class="text-lg text-gray-700 mb-8 text-center">Les différences fondamentales dans les environnements de travail, le management et la pression professionnelle jouent un rôle crucial dans les choix de carrière des comptables. Cette section explore ces aspects comparativement.</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-800 text-center">🚀 Management et Leadership</h3>
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-lg pill pill-cabinet mb-2">En Cabinet : Style Traditionnel ?</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1 pl-4">
+                            <li>Hiérarchies souvent perçues comme verticales, moins adaptatives.</li>
+                            <li>Besoin de capacités managériales accrues avec l'évolution vers le conseil.</li>
+                            <li>Défi pour les dirigeants d'impulser le changement.</li>
+                            <li>Perception externe de rigidité et de manque d'écoute des évolutions.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg pill pill-entreprise mb-2">En Entreprise : Approche Collaborative ?</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1 pl-4">
+                            <li>Environnement souvent plus collaboratif, axé sur l'équipe.</li>
+                            <li>Synergie au sein des services comptables intégrés.</li>
+                            <li>Opportunités de participation aux décisions stratégiques.</li>
+                            <li>Sentiment d'appartenance à un collectif plus fort.</li>
+                        </ul>
+                    </div>
+                    <div class="mt-6 chart-container h-72 sm:h-80">
+                         <canvas id="managementPerceptionChart"></canvas>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 text-center">Perception du management (données illustratives)</p>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-800 text-center">⚖️ Conditions de Travail et Pression</h3>
+                     <div class="mb-6">
+                        <h4 class="font-semibold text-lg pill pill-cabinet mb-2">En Cabinet : Intensité et Exigences</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1 pl-4">
+                            <li>Pics d'activité intenses (périodes fiscales janvier-mai).</li>
+                            <li>Gestion de 40-50 clients en moyenne.</li>
+                            <li>Horaires extensibles, impact sur l'équilibre vie pro/perso (un pourcentage significatif en difficulté selon des études).</li>
+                            <li>Pression des délais clients, volume, responsabilité (un pourcentage élevé de collaborateurs rapporte subir des pressions).</li>
+                            <li>Télétravail demandé mais pas toujours généralisé.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg pill pill-entreprise mb-2">En Entreprise : Stabilité et Prévisibilité ?</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1 pl-4">
+                            <li>Cycle de travail plus linéaire, pics pour clôtures.</li>
+                            <li>Équilibre vie pro/perso souvent perçu comme plus favorable.</li>
+                            <li>Pression des délais de reporting interne, performance de l'entreprise.</li>
+                            <li>Modalités de travail flexibles potentiellement plus accessibles.</li>
+                        </ul>
+                    </div>
+                     <div class="mt-6 chart-container h-72 sm:h-80">
+                         <canvas id="pressionEquilibreChart"></canvas>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 text-center">Perception de la pression et de l'équilibre (données illustratives)</p>
+                </div>
+            </div>
+
+            <div class="mt-10 card p-6">
+                <h3 class="text-2xl font-semibold mb-4 text-gray-800 text-center">Tableau Comparatif Général (Extrait du Tableau 1 du rapport)</h3>
+                <p class="text-sm text-gray-600 mb-4 text-center">Cette comparaison met en évidence les distinctions fondamentales qui influencent l'expérience professionnelle et l'attractivité.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full comparison-table text-sm">
+                        <thead>
+                            <tr>
+                                <th class="w-1/3">Attribut</th>
+                                <th class="w-1/3">Cabinet d'Expertise Comptable</th>
+                                <th class="w-1/3">Comptable en Entreprise</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Focus Principal des Missions</td>
+                                <td>Gestion de portefeuilles clients variés, missions de tenue, révision, conseil.</td>
+                                <td>Gestion financière interne pour une seule entité.</td>
+                            </tr>
+                            <tr>
+                                <td>Cycle Typique de Charge de Travail</td>
+                                <td>Pics d'intensité très marqués durant les périodes fiscales (janvier-mai).</td>
+                                <td>Plus linéaire avec des pics mensuels/annuels pour les clôtures.</td>
+                            </tr>
+                            <tr>
+                                <td>Équilibre Vie Pro/Perso (Perception)</td>
+                                <td>Souvent perçu comme difficile, horaires irréguliers.</td>
+                                <td>Généralement perçu comme plus prévisible et favorable.</td>
+                            </tr>
+                             <tr>
+                                <td>Principaux Facteurs de Stress</td>
+                                <td>Délais clients, volume de dossiers, responsabilités multiples.</td>
+                                <td>Délais de reporting interne, performance de l'entreprise, pression hiérarchique.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <hr class="my-12 border-gray-300">
+
+        <section id="remuneration" class="py-8">
+            <h2 class="text-3xl font-bold mb-6 section-title text-center">Rémunération, Rétributions et Avantages</h2>
+            <div class="card p-6 md:p-8">
+                <p class="text-lg text-gray-700 mb-6">La rémunération est un facteur clé, mais doit être évaluée globalement en tenant compte de la charge de travail et des avantages. L'"équation de valeur" est souvent perçue comme déséquilibrée en cabinet.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Éléments de Rémunération :</h3>
+                         <ul class="list-disc list-inside text-gray-600 space-y-2">
+                            <li><strong>Salaires en cabinet :</strong> "Assez intéressants" (débutants 22-32k€, expérimentés 50-90k€). Les "Big 7" ont augmenté les salaires.</li>
+                            <li><strong>Salaires en entreprise :</strong> Compétitifs, fonction des compétences spécifiques, parfois supérieurs.</li>
+                            <li><strong>Primes & Intéressement :</strong>
+                                <span class="pill pill-cabinet">Cabinet</span>: Moins mis en avant, mais des exemples positifs (actionnariat salarié).
+                                <span class="pill pill-entreprise">Entreprise</span>: Plus fréquent (>50 salariés pour participation).
+                            </li>
+                            <li><strong>Avantages non financiers :</strong>
+                                <span class="pill pill-cabinet">Cabinet</span>: RTT, mutuelle, fort investissement formation (1-2% CA).
+                                <span class="pill pill-entreprise">Entreprise</span>: RTT, mutuelle, formation spécifique au rôle.
+                            </li>
+                        </ul>
+                        <p class="text-gray-700 mt-4">Un point critique est la perception d'équité : <strong class="text-red-600">Un pourcentage notable de collaborateurs en cabinet (par ex. 64% dans certaines études) estime ne pas être rémunéré à sa juste valeur.</strong></p>
+                    </div>
+                    <div class="chart-container h-72 sm:h-80 md:h-96">
+                        <canvas id="remunerationEquiteChart"></canvas>
+                    </div>
+                </div>
+                 <p class="text-sm text-gray-500 mt-6 text-center">Le sentiment d'iniquité, même face à des salaires compétitifs, influence lourdement la satisfaction.</p>
+            </div>
+        </section>
+
+        <hr class="my-12 border-gray-300">
+
+        <section id="reconnaissance" class="py-8">
+            <h2 class="text-3xl font-bold mb-6 section-title text-center">Considération et Reconnaissance</h2>
+            <div class="card p-6 md:p-8">
+                <p class="text-lg text-gray-700 mb-6">Le manque de reconnaissance est un thème préoccupant en cabinet. Les collaborateurs peuvent se sentir comme "un simple rouage", ce qui est démotivant (84% des salariés en général jugent la reconnaissance indispensable).</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                     <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Perception de la Valeur :</h3>
+                         <ul class="list-disc list-inside text-gray-600 space-y-2">
+                            <li><strong>En Cabinet :</strong>
+                                <ul class="list-disc list-inside pl-5 space-y-1">
+                                    <li>Soutien hiérarchique souvent présent, mais ne se traduit pas toujours en valorisation.</li>
+                                    <li>Un pourcentage notable (par ex. 28% dans certaines études) ne se sent pas libre d'exprimer ses opinions.</li>
+                                    <li>Près de la moitié (dans certaines études) sont mal informés des projets du cabinet.</li>
+                                    <li>Culture technique peut éclipser le feedback personnalisé.</li>
+                                </ul>
+                            </li>
+                             <li><strong>En Entreprise :</strong>
+                                <ul class="list-disc list-inside pl-5 space-y-1">
+                                    <li>Culture de reconnaissance forte = meilleure rétention.</li>
+                                    <li>Contributions plus visibles pour une direction stable.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                         <p class="text-gray-700 mt-4">L'impact émotionnel du manque d'appréciation, surtout sous pression, pèse sur la décision de quitter un poste.</p>
+                    </div>
+                    <div class="chart-container h-72 sm:h-80 md:h-96">
+                        <canvas id="reconnaissanceChart"></canvas>
+                    </div>
+                </div>
+                 <p class="text-sm text-gray-500 mt-6 text-center">Un feedback positif régulier et des marques de reconnaissance stimulent l'engagement et la loyauté.</p>
+            </div>
+        </section>
+
+        <hr class="my-12 border-gray-300">
+
+        <section id="synthese" class="py-8">
+            <h2 class="text-3xl font-bold mb-6 section-title text-center">Synthèse des Défis : Pourquoi les Cabinets Luttent-ils ?</h2>
+            <div class="card p-6 md:p-8">
+                <p class="text-lg text-gray-700 mb-4">Les difficultés de recrutement et de rétention en cabinet résultent de facteurs interconnectés :</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ul class="space-y-3 text-gray-600">
+                        <li class="flex items-start"><span class="text-red-500 mr-2 text-xl">✕</span> Lacunes managériales perçues (traditionnel, hiérarchique).</li>
+                        <li class="flex items-start"><span class="text-red-500 mr-2 text-xl">✕</span> Conditions de travail rigoureuses (pression, horaires, équilibre précaire).</li>
+                        <li class="flex items-start"><span class="text-red-500 mr-2 text-xl">✕</span> Déséquilibre perçu de la rémunération par rapport aux exigences.</li>
+                    </ul>
+                     <ul class="space-y-3 text-gray-600">
+                        <li class="flex items-start"><span class="text-red-500 mr-2 text-xl">✕</span> Déficit de reconnaissance et de valorisation des collaborateurs.</li>
+                        <li class="flex items-start"><span class="text-red-500 mr-2 text-xl">✕</span> Problème d'image et adaptation aux attentes des nouvelles générations.</li>
+                    </ul>
+                </div>
+                <p class="text-gray-700 mt-6">Le modèle d'affaires traditionnel des cabinets (forte utilisation de juniors, pression client, focus heures facturables) est de plus en plus décalé par rapport aux attentes actuelles. Les cabinets agissent souvent comme un vivier de talents "perméable" pour les entreprises, qui bénéficient de la formation dispensée en cabinet sans en supporter l'environnement initial à haute pression.</p>
+                 <p class="text-sm text-gray-500 mt-4 text-center">Ce flux souvent unidirectionnel souligne le défi systémique pour les cabinets.</p>
+            </div>
+        </section>
+
+        <hr class="my-12 border-gray-300">
+
+        <section id="recommandations" class="py-8">
+            <h2 class="text-3xl font-bold mb-10 section-title text-center">Recommandations Stratégiques pour les Cabinets</h2>
+            <p class="text-lg text-gray-700 mb-8 text-center">Pour surmonter ces défis, une transformation holistique est nécessaire, allant au-delà des ajustements marginaux. Il s'agit de repenser la culture, le management et les opérations.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <span class="recommendation-icon mb-3">🤝</span>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Évolution Managériale</h3>
+                    <p class="text-gray-600 text-sm">Adopter des styles plus humains, participatifs. Améliorer communication, transparence. Former aux soft skills (feedback, reconnaissance).</p>
+                </div>
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <span class="recommendation-icon mb-3">💼</span>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Conditions de Travail</h3>
+                    <p class="text-gray-600 text-sm">Gérer activement la charge de travail. Promouvoir la flexibilité (télétravail). Prévenir les risques psychosociaux.</p>
+                </div>
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <span class="recommendation-icon mb-3">💰</span>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Systèmes de Rétribution</h3>
+                    <p class="text-gray-600 text-sm">Assurer une rémunération compétitive ET perçue comme équitable. Explorer participation, actionnariat salarié.</p>
+                </div>
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <span class="recommendation-icon mb-3">🌟</span>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Culture de Reconnaissance</h3>
+                    <p class="text-gray-600 text-sm">Mettre en place des programmes de reconnaissance réguliers. Encourager le feedback continu. Valoriser les contributions.</p>
+                </div>
+                <div class="card p-6 flex flex-col items-center text-center">
+                    <span class="recommendation-icon mb-3">🎯</span>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Marque Employeur</h3>
+                    <p class="text-gray-600 text-sm">Améliorer l'image. Mettre en avant la richesse des missions. S'adapter aux attentes des nouvelles générations (valeurs, équilibre).</p>
+                </div>
+                 <div class="card p-6 flex flex-col items-center text-center bg-blue-50">
+                    <span class="recommendation-icon mb-3">💡</span>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Conclusion Clé</h3>
+                    <p class="text-gray-700 text-sm">Devenir un employeur de choix, à l'écoute des aspirations, est vital pour la pérennité des cabinets.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center py-10 mt-12 border-t border-gray-300">
+            <p class="text-gray-600">&copy; 2024 Analyse Interactive des Défis de Recrutement.</p>
+            <p class="text-sm text-gray-500 mt-1">Basé sur le rapport "Analyse Comparative des Défis de Recrutement et de Rétention : Cabinets d'Expertise Comptable face aux Entreprises" (document c2cd1881-f00e-4f55-afe3-ac16f1ab5f5d).</p>
+        </footer>
+
+    </main>
+
+<script>
+    const primaryColor = '#3498DB'; // Bright Blue
+    const secondaryColor = '#85C1E9'; // Lighter Blue
+    const textColor = '#2C3E50'; // Dark Slate Blue
+    const gridColor = '#D colectivoAE5'; // Light Grey for grids
+
+    // Chart.js Global Config
+    Chart.defaults.font.family = 'Inter, sans-serif';
+    Chart.defaults.color = textColor;
+
+    function wrapLabel(label, maxLength = 16) {
+        if (typeof label !== 'string' || label.length <= maxLength) {
+            return label;
+        }
+        const words = label.split(' ');
+        const lines = [];
+        let currentLine = '';
+        for (const word of words) {
+            if ((currentLine + word).length > maxLength && currentLine.length > 0) {
+                lines.push(currentLine.trim());
+                currentLine = '';
+            }
+            currentLine += word + ' ';
+        }
+        if (currentLine.length > 0) {
+            lines.push(currentLine.trim());
+        }
+        return lines.length > 0 ? lines : [label];
+    }
+
+    const tooltipTitleCallback = {
+        callbacks: {
+            title: function(tooltipItems) {
+                const item = tooltipItems[0];
+                if (!item) return '';
+                const dataIndex = item.dataIndex;
+                 if (item.chart && item.chart.data && item.chart.data.labels && item.chart.data.labels[dataIndex] !== undefined) {
+                    let label = item.chart.data.labels[dataIndex];
+                    if (Array.isArray(label)) {
+                        return label.join(' ');
+                    }
+                    return label;
+                }
+                return '';
+            }
+        }
+    };
+    
+    const commonChartOptions = (additionalOptions = {}) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { color: textColor }
+            },
+            tooltip: { ...tooltipTitleCallback, bodyFont: { size: 12 }, titleFont: { size: 14 }}
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { color: textColor, font: {size: 10} },
+                grid: { color: gridColor }
+            },
+            x: {
+                ticks: { color: textColor, font: {size: 10}, callback: function(value, index, ticks) {
+                        const label = this.getLabelForValue(value);
+                        return wrapLabel(label, 10);
+                    } 
+                },
+                grid: { display: false }
+            }
+        },
+        ...additionalOptions
+    });
+
+
+    // Attractivité Chart
+    const attractiviteCtx = document.getElementById('attractiviteChart')?.getContext('2d');
+    if (attractiviteCtx) {
+        new Chart(attractiviteCtx, {
+            type: 'bar',
+            data: {
+                labels: [wrapLabel('Missions Variées'), wrapLabel('Rôle Stratégique'), wrapLabel('Modernité des Outils')],
+                datasets: [
+                    {
+                        label: 'Perception Externe Négative (Illustratif)',
+                        data: [30, 40, 25], 
+                        backgroundColor: '#E74C3C', 
+                    },
+                    {
+                        label: 'Réalité en Cabinet (Potentiel Illustratif)',
+                        data: [75, 70, 60], 
+                        backgroundColor: '#2ECC71', 
+                    }
+                ]
+            },
+            options: commonChartOptions({ indexAxis: 'y', scales: {x:{stacked:false, ticks: { font: {size:9}}}, y:{stacked:false, ticks: { font: {size: 9} }}}})
+        });
+    }
+
+    // Management Perception Chart (Bar Chart)
+    const managementCtx = document.getElementById('managementPerceptionChart')?.getContext('2d');
+    if (managementCtx) {
+        new Chart(managementCtx, {
+            type: 'bar', // Changed from doughnut
+            data: {
+                labels: [wrapLabel('Soutenu par la hiérarchie'), wrapLabel('Peut discuter du travail'), wrapLabel('Libre d\'exprimer opinions'), wrapLabel('Bien informé des projets')],
+                datasets: [{
+                    label: 'Perception du Management en Cabinet (% Illustratif)',
+                    data: [85, 92, 72, 50], 
+                    backgroundColor: [primaryColor, secondaryColor, '#5DADE2', '#AED6F1'],
+                }]
+            },
+            options: commonChartOptions({ indexAxis: 'y', scales: { y: { ticks: { font: {size:9}}}, x: {max:100} }, plugins: { legend: { display: false}, tooltip: tooltipTitleCallback } })
+        });
+    }
+
+    // Pression & Equilibre Chart
+    const pressionEquilibreCtx = document.getElementById('pressionEquilibreChart')?.getContext('2d');
+    if (pressionEquilibreCtx) {
+        new Chart(pressionEquilibreCtx, {
+            type: 'bar',
+            data: {
+                labels: [wrapLabel('Subit des pressions (Illustratif)'), wrapLabel('Difficulté équilibre vie pro/perso (Illustratif)')],
+                datasets: [{
+                    label: '% de Collaborateurs en Cabinet (Illustratif)',
+                    data: [73, 36],
+                    backgroundColor: [primaryColor, secondaryColor],
+                }]
+            },
+            options: commonChartOptions({ scales: { y: { max: 100 } } })
+        });
+    }
+    
+    // Rémunération Equite Chart (Bar Chart)
+    const remunerationEquiteCtx = document.getElementById('remunerationEquiteChart')?.getContext('2d');
+    if (remunerationEquiteCtx) {
+        new Chart(remunerationEquiteCtx, {
+            type: 'bar', // Changed from pie
+            data: {
+                labels: [wrapLabel('Non rémunéré à sa juste valeur (Perception)'), wrapLabel('Rémunéré justement (Perception)')],
+                datasets: [{
+                    label: 'Perception Équité Rémunération en Cabinet (% Illustratif)',
+                    data: [64, 36],
+                    backgroundColor: ['#E74C3C', '#2ECC71'], 
+                }]
+            },
+            options: commonChartOptions({ scales: { y: { max: 100 } }, plugins: { legend: { display: true, position: 'bottom'}, tooltip: tooltipTitleCallback }})
+        });
+    }
+
+    // Reconnaissance Chart
+    const reconnaissanceCtx = document.getElementById('reconnaissanceChart')?.getContext('2d');
+    if (reconnaissanceCtx) {
+        new Chart(reconnaissanceCtx, {
+            type: 'bar',
+            data: {
+                labels: [wrapLabel('Reconnaissance indispensable (Salariés)'), wrapLabel('Se sent libre d\'exprimer opinions (Cabinet)'), wrapLabel('Mal informé des projets (Cabinet)')],
+                datasets: [{
+                    label: 'Reconnaissance et Communication (% Illustratif)',
+                    data: [84, 72, 48], 
+                    backgroundColor: [primaryColor, secondaryColor, '#AED6F1'],
+                }]
+            },
+            options: commonChartOptions({ scales: { y: { max: 100 } } })
+        });
+    }
+
+    // Smooth scroll for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+                this.classList.add('active');
+                targetElement.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Active nav link on scroll
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('header nav a');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 100) { 
+                current = section.getAttribute('id');
+            }
+        });
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href').substring(1) === current) {
+                link.classList.add('active');
+            }
+        });
+    });
+
+</script>
+</body>
+</html>
